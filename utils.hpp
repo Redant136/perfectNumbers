@@ -686,15 +686,12 @@ namespace chevan_utils
   template <typename Printable>
   static void println(Printable p)
   {
-    std::cout << p << std::endl;
+    print(p);
+    std::cout << std::endl;
   }
   static void print(uchar *p)
   {
     std::cout << (void *)p;
-  }
-  static void println(uchar *p)
-  {
-    std::cout << (void *)p << std::endl;
   }
   template <typename L>
   static void print(Array<char, L> arr, L length = 256)
@@ -703,22 +700,10 @@ namespace chevan_utils
     std::cout << std::string(arr.arr, arr.arr + l);
   }
   template <typename L>
-  static void println(Array<char, L> arr, L length = 256)
-  {
-    L l = arr.length < length ? arr.length : length;
-    std::cout << std::string(arr.arr, arr.arr + l) << std::endl;
-  }
-  template <typename L>
   static void print(Array<uchar, L> arr, L length = 256)
   {
     L l = arr.length < length ? arr.length : length;
     std::cout << std::string(arr.arr, arr.arr + l);
-  }
-  template <typename L>
-  static void println(Array<uchar, L> arr, L length = 256)
-  {
-    L l = arr.length < length ? arr.length : length;
-    std::cout << std::string(arr.arr, arr.arr + l) << std::endl;
   }
   template <typename T, typename L>
   static void print(Array<T, L> arr, L length = 256)
@@ -732,19 +717,6 @@ namespace chevan_utils
     }
     s += "}";
     std::cout << s;
-  }
-  template <typename T, typename L>
-  static void println(Array<T, L> arr, L length = 256)
-  {
-    L l = arr.length < length ? arr.length : length;
-    std::string s = "{";
-    s += std::to_string(arr[0]);
-    for (uint i = 1; i < l; i++)
-    {
-      s += "," + std::to_string(arr[i]);
-    }
-    s += "}";
-    std::cout << s << std::endl;
   }
 #ifdef CHEVAN_UTILS_VEC2
   static void print(CHEVAN_UTILS_VEC2 v)
@@ -761,19 +733,11 @@ namespace chevan_utils
   {
     print("{", v.x, ", ", v.y, ", ", v.z, "}");
   }
-  static void println(CHEVAN_UTILS_VEC3 v)
-  {
-    println("{", v.x, ", ", v.y, ", ", v.z, "}");
-  }
 #endif
 #ifdef CHEVAN_UTILS_VEC4
   static void print(CHEVAN_UTILS_VEC4 v)
   {
     print("{", v.x, ", ", v.y, ", ", v.z, ", ", v.w, "}");
-  }
-  static void println(CHEVAN_UTILS_VEC4 v)
-  {
-    println("{", v.x, ", ", v.y, ", ", v.z, ", ", v.w, "}");
   }
 #endif
   template <typename Printable, typename... Printable2>

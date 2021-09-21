@@ -1,5 +1,6 @@
 #include <thread>
 #include <mutex>
+#define THREAD_COUNT 32
 #include <cmath>
 #include <stdint.h>
 
@@ -12,7 +13,7 @@ typedef boost::multiprecision::uint1024_t hugeUInt;
 namespace chevan_utils
 {
   static std::mutex mutex;
-  static void print(bigUInt n)
+  static void atomic_println(bigUInt n)
   {
     if (n < UINT64_MAX)
     {
@@ -28,9 +29,11 @@ namespace chevan_utils
       *--s = "0123456789"[n % 10];
       n /= 10;
     }
-    std::cout << s;
+    mutex.lock();
+    std::cout << s << std::endl;
+    mutex.unlock();
   }
-  static void print(hugeUInt n)
+  static void atomic_println(hugeUInt n)
   {
     if (n < UINT64_MAX)
     {
@@ -39,7 +42,7 @@ namespace chevan_utils
     }
     if (n < (hugeUInt)std::pow(2, 128))
     {
-      print((bigUInt)n);
+      atomic_println((bigUInt)n);
       return;
     }
     char str[400] = {0};
@@ -51,7 +54,9 @@ namespace chevan_utils
       *--s = "0123456789"[(uint)(n % 10)];
       n /= 10;
     }
-    std::cout << s;
+    mutex.lock();
+    std::cout << s << std::endl;
+    mutex.unlock();
   }
 }
 #include "utils.hpp"
@@ -67,9 +72,6 @@ namespace chevan_utils
 }
 #define print atomic_println
 using namespace chevan_utils;
-
-#define THREAD_COUNT 36
-#define MAX_K_TESTED 130
 
 template <typename N>
 static bool isPrime(N n)
@@ -105,30 +107,13 @@ static void euclid_euler(T k)
     power *= 2;
   }
   T primePart = power * 2 - 1;
-  
-  // the result must end with 6 or 8
-  if (((power % 10) * (primePart % 10) % 10) != 8 && ((power % 10) * (primePart % 10) % 10) != 6)
-    return;
-
   if (k > 2)
-  {
     if (!isMersennesPrime(primePart, k))
       return;
-  }
-  else
-  {
-    if (!isPrime(primePart))
+    else if (!isPrime(primePart))
       return;
-  }
 
-  if (k >= MAX_K_TESTED)
-  {
-    print("imprecise: ",power * primePart);
-  }
-  else
-  {
-    print(power * primePart);
-  }
+  print(power * primePart);
 }
 
 static void threadLaunch(uchar t)
@@ -137,12 +122,17 @@ static void threadLaunch(uchar t)
   {
     if (k < 17)
       euclid_euler<u32>(k);
-    else if (k < 33)
+    else if (k < 31)
       euclid_euler<u64>(k);
-    else if (k < 65)
+    else if (k < 37)
       euclid_euler<bigUInt>(k);
-    else 
+    else if (k < 127)
       euclid_euler<hugeUInt>(k);
+    else
+    {
+      println("this is so huge it cannot be contained in a 1024 bit int");
+      return;
+    }
   }
 }
 
