@@ -52,7 +52,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <functional>
-#include <string>
+#include <string.h>
 
 #endif // CHEVAN_UTILS_COMMON_INCLUDES
 
@@ -692,6 +692,10 @@ namespace chevan_utils
   static void print(uchar *p)
   {
     std::cout << (void *)p;
+  }
+  static void print(uchar p)
+  {
+    print((int)p);
   }
   template <typename L>
   static void print(Array<char, L> arr, L length = 256)

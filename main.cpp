@@ -7,8 +7,9 @@
 #define CHEVAN_UTILS_PRINT
 #define CHEVAN_UTILS_bytes
 #include <boost/multiprecision/cpp_int.hpp>
+#include <gmp.h>
 typedef __uint128_t bigUInt;
-typedef boost::multiprecision::uint1024_t hugeUInt;
+typedef boost::multiprecision::uint1024_t biggerUInt;
 namespace chevan_utils
 {
   static std::mutex mutex;
@@ -30,14 +31,14 @@ namespace chevan_utils
     }
     std::cout << s;
   }
-  static void print(hugeUInt n)
+  static void print(biggerUInt n)
   {
     if (n < UINT64_MAX)
     {
       std::cout << (uint64_t)n << std::endl;
       return;
     }
-    if (n < (hugeUInt)std::pow(2, 128))
+    if (n < (biggerUInt)std::pow(2, 128))
     {
       print((bigUInt)n);
       return;
@@ -65,11 +66,11 @@ namespace chevan_utils
     mutex.unlock();
   }
 }
-#define print atomic_println
 using namespace chevan_utils;
+#define print atomic_println
 
-#define THREAD_COUNT 36
-#define MAX_K_TESTED 130
+#define THREAD_COUNT 32
+#define MAX_K_TESTED 120
 
 template <typename N>
 static bool isPrime(N n)
@@ -94,6 +95,21 @@ static bool isMersennesPrime(T m, T p)
   }
   return s == 0;
 }
+template <typename T>
+static bool isMersennesPrime(mpz_t m, T p)
+{
+  mpz_t s;
+  mpz_init(s);
+  mpz_set_ui(s, 4);
+  for (biggerUInt i = 3; i <= p; i++)
+  {
+    mpz_mul(s, s, s);
+    mpz_sub_ui(s, s, 2);
+    mpz_mod(s, s, m);
+    // s = (s * s - 2) % m;
+  }
+  return mpz_get_ui(s) == 0;
+}
 
 template <typename T>
 static void euclid_euler(T k)
@@ -105,10 +121,6 @@ static void euclid_euler(T k)
     power *= 2;
   }
   T primePart = power * 2 - 1;
-  
-  // the result must end with 6 or 8
-  if (((power % 10) * (primePart % 10) % 10) != 8 && ((power % 10) * (primePart % 10) % 10) != 6)
-    return;
 
   if (k > 2)
   {
@@ -123,12 +135,36 @@ static void euclid_euler(T k)
 
   if (k >= MAX_K_TESTED)
   {
-    print("imprecise: ",power * primePart);
+    print("imprecise: ", power * primePart);
   }
   else
   {
     print(power * primePart);
   }
+}
+
+static void euclid_euler_gmp(biggerUInt k)
+{
+  mpz_t power;
+  mpz_init(power);
+  mpz_set_ui(power, 1);
+  for (u64 p = 0; p < k - 1; p++)
+  {
+    mpz_mul_ui(power, power, 2);
+  }
+  mpz_t primePart;
+  mpz_init(primePart);
+  mpz_mul_ui(primePart, power, 2);
+  mpz_sub_ui(primePart, primePart, 1);
+
+  if (!isMersennesPrime(primePart, k))
+    return;
+
+  mpz_mul(power, power, primePart);
+  char *result = new char[1000000];
+  mpz_get_str(result, 10, power);
+  print(result);
+  delete[] result;
 }
 
 static void threadLaunch(uchar t)
@@ -141,21 +177,34 @@ static void threadLaunch(uchar t)
       euclid_euler<u64>(k);
     else if (k < 65)
       euclid_euler<bigUInt>(k);
-    else 
-      euclid_euler<hugeUInt>(k);
+    else if (k < MAX_K_TESTED)
+      euclid_euler<biggerUInt>(k);
+    else
+    {
+      euclid_euler_gmp(k);
+    }
   }
 }
 
 int main()
 {
+  // return 0;
   std::vector<std::thread> threads = std::vector<std::thread>(THREAD_COUNT);
-  for (uchar t = 0; t < THREAD_COUNT; t++)
+  if (THREAD_COUNT == 1)
   {
-    threads[t] = std::thread(threadLaunch, t);
+    threadLaunch(0);
   }
+  else
+  {
+    for (uchar t = 0; t < THREAD_COUNT; t++)
+    {
+      threads[t] = std::thread(threadLaunch, t);
+    }
 
-  for (uchar i = 0; i < THREAD_COUNT; i++)
-  {
-    threads[i].join();
+    for (uchar i = 0; i < THREAD_COUNT; i++)
+    {
+      threads[i].join();
+    }
   }
+  return 0;
 }
