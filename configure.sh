@@ -1,6 +1,7 @@
-cd gmp-6.1.2
+#!/bin/bash
+
+cd "./gmp-6.2.1"
 ./configure
 make
 make check
 make install
-cd ..
